@@ -1,7 +1,6 @@
 #code for IPFD paper
 
 #load packages
-#加载包
 {
   library(data.table)
   library(dplyr)
