@@ -3,6 +3,7 @@
 #load packages
 {
   library(data.table)
+  library(readxl)
   library(dplyr)
   library(tidyverse)
   library(plyr)
@@ -43,10 +44,8 @@ date_follow_up=ymd_h('2024-10-31 24')
 {
 data_icd10<-data.frame(eid=ukb$eid,
                        date_recruitment=as.POSIXct(ukb$`53-2.0`),
-                       #死亡
                        death_date0=as.POSIXct(ukb$`40000-0.0`),
                        death_date1=as.POSIXct(ukb$`40000-1.0`),
-                       #失访日期
                        date_lost_follow=ukb$`191-0.0`
 )
 data_icd10$death_date1[which(is.na(data_icd10$death_date1))]<-data_icd10$death_date0[which(is.na(data_icd10$death_date1))]
@@ -290,7 +289,6 @@ for(i in grep(paste0(cox_model3$ICD.10[which(cox_model3$zph<0.05)],collapse = '|
   )
   cox_model3t<-rbind(cox_model3t,res)
 }
-#暂存cox表格
 write.csv(cox_model3t, file = "table/cox_model_td.csv")
 
 #Sorting table format
@@ -440,7 +438,6 @@ fwrite(cox.export,file = 'table/obs-PheWAS.csv')
     )
     cox_model3t<-rbind(cox_model3t,res)
   }
-  #暂存cox表格
   write.csv(cox_model3t, file = "table/cox_model_td.csv")
 }
 
@@ -981,7 +978,6 @@ rcs_plot_list <- list()
 slope_plot_list <- list()
 
 for (i in 1:17) {
-  # 设置当前疾病
   current_status <- statuses[i]
   current_time <- times[i]
   current_disease <- diseases[i]
@@ -1083,7 +1079,6 @@ for (i in 1:17) {
   
   rcs_plot_list[[i]] <- rcs_plot
   
-  # 保存图形
   ggsave(paste0("figure/rcs/RCS_plot_", current_status, ".png"), rcs_plot, 
          width = 8, height = 6, dpi = 300)
   
