@@ -1224,104 +1224,6 @@ p=ggplot(roc_df, aes(x = threshold, y = youden)) +
 
 ggsave("figure/Youden.png", p, width = 10, height = 8, dpi = 300)
 
-#validation
-data_cut=data
-data_cut$status=ifelse(rowSums(data_ICD10[,statuses])==0,0,1)
-data_cut=data_cut[rowSums(data_ICD10[, times] > 0) == length(times), ]
-model_orig <- glm(status ~ IPFD_ori, data = data_cut, family = binomial)
-predicted_prob_orig <- predict(model_orig, type = "response")
-roc_obj_orig <- roc(data_cut$status, predicted_prob_orig)
-best <- coords(roc_obj_orig, "best", best.method = "youden", ret = "threshold")
-model.out=summary(model_orig)
-b0=model.out$coefficients[1,1]
-b1=model.out$coefficients[2,1]
-best_cutoff = (logit(best$threshold) - b0) / b1
-
-results_df <- data.frame(
-  Disease = character(length(statuses)),
-  ICD10 = character(length(statuses)),
-  Train_AUC = numeric(length(statuses)),
-  Train_AUC_CI_lower = numeric(length(statuses)),
-  Train_AUC_CI_upper = numeric(length(statuses)),
-  Test_AUC = numeric(length(statuses)),
-  Test_AUC_CI_lower = numeric(length(statuses)),
-  Test_AUC_CI_upper = numeric(length(statuses)),
-  stringsAsFactors = FALSE
-)
-
-for (i in 1:length(statuses)){
-  data_cut=data
-  data_cut$status=data_ICD10[[statuses[i]]]
-  data_cut=data_cut[data_ICD10[[times[i]]]>0, ]
-  data_cut$IPFD_binary <- ifelse(data_cut$IPFD_ori >= best_cutoff, 1, 0)
-  model_formula <- as.formula(paste("status ~ IPFD_binary +", 
-                                    paste(covariates, collapse = " + ")))
-  model_formula <- as.formula("status ~ IPFD_binary")
-  
-  set.seed(123) 
-  
-  train_index <- createDataPartition(
-    y = data_cut$status,         
-    p = 0.7,                     
-    list = FALSE,                
-    times = 1                    
-  )
-  
-  train_data <- data_cut[train_index, ]  
-  test_data <- data_cut[-train_index, ]  
-  full_model <- glm(model_formula, 
-                    data = train_data, 
-                    family = binomial)
-  
-  summary(full_model)
-  
-  train_pred <- predict(full_model, type = "response")
-  
-  test_pred <- predict(full_model, newdata = test_data, type = "response")
-  
-  train_roc <- roc(train_data$status, train_pred)
-  test_roc <- roc(test_data$status, test_pred)
-  train_auc_ci=ci.auc(train_roc)
-  test_auc_ci <- ci.auc(test_roc)
-  
-    results_df[i+1, "Disease"] <- diseases[i]
-  results_df[i+1, "ICD10"] <- ICD10[i]
-  results_df[i+1, "Train_AUC"] <- auc(train_roc)
-  results_df[i+1, "Train_AUC_CI_lower"] <- train_auc_ci[1]
-  results_df[i+1, "Train_AUC_CI_upper"] <- train_auc_ci[3]
-  results_df[i+1, "Test_AUC"] <- auc(test_roc)
-  results_df[i+1, "Test_AUC_CI_lower"] <- test_auc_ci[1]
-  results_df[i+1, "Test_AUC_CI_upper"] <- test_auc_ci[3]
-  
-  cat("Finished:", diseases[i], "(", ICD10[i], ")\n")
-}
-
-#Composite outcome indicator
-data_cut=data
-data_cut$status=ifelse(rowSums(data_ICD10[,statuses])==0,0,1)
-data_cut=data_cut[rowSums(data_ICD10[, times] > 0) == length(times), ]
-model_formula <- as.formula(paste("status ~ IPFD_binary +", 
-                                  paste(covariates, collapse = " + ")))
-
-set.seed(123) 
-full_model <- glm(model_formula, 
-                  data = train_data, 
-                  family = binomial)
-
-train_pred <- predict(full_model, type = "response")
-test_pred <- predict(full_model, newdata = test_data, type = "response")
-train_roc <- roc(train_data$status, train_pred)
-test_roc <- roc(test_data$status, test_pred)
-train_auc_ci=ci.auc(train_roc)
-test_auc_ci <- ci.auc(test_roc)
-results_df[1, "Disease"] <- 'Composite outcome'
-results_df[1, "ICD10"] <- 'NA'
-results_df[1, "Train_AUC"] <- auc(train_roc)
-results_df[1, "Train_AUC_CI_lower"] <- train_auc_ci[1]
-results_df[1, "Train_AUC_CI_upper"] <- train_auc_ci[3]
-results_df[1, "Test_AUC"] <- auc(test_roc)
-results_df[1, "Test_AUC_CI_lower"] <- test_auc_ci[1]
-results_df[1, "Test_AUC_CI_upper"] <- test_auc_ci[3]
 }
 
 #MR
@@ -1513,3 +1415,4 @@ for (i in which(pdata$`Adjusted P value`<0.05)) {
 }
 p_leave1[which(pdata$`Adjusted P value`<0.05)]
 }
+
